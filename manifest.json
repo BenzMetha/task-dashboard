@@ -1,0 +1,12 @@
+{
+  "name": "ตะกร้างาน — Work Flow Dashboard",
+  "short_name": "ตะกร้างาน",
+  "start_url": "./task-inbox-dashboard.html",
+  "display": "standalone",
+  "background_color": "#E9EDE7",
+  "theme_color": "#2F5D50",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
