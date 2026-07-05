@@ -186,8 +186,15 @@
   .editrow input:focus{border-color:var(--green)}
   .editrow button{background:var(--green);color:#fff;border:none;border-radius:7px;padding:0 12px;font-family:inherit;font-size:13px;cursor:pointer;font-weight:600}
 
-  .done-card{opacity:.55;cursor:default}
+  .done-card{opacity:.55;cursor:pointer}
+  .done-card:hover{opacity:.8}
   .done-card h3{text-decoration:line-through}
+
+  .donebanner{display:flex;justify-content:space-between;align-items:center;
+    background:var(--green-soft);border:1px solid #cde3d4;border-radius:10px;
+    padding:9px 13px;margin-bottom:14px;font-size:13px;font-weight:600;color:var(--green)}
+  .donebanner .editbtn{color:var(--green);background:var(--surface)}
+  .donebanner .editbtn:hover{background:#fff}
 
   .overdue{color:var(--red) !important}
   .overdue-mini{color:var(--red);font-weight:600}
@@ -390,14 +397,15 @@ function render(){
     return;
   }
 
-  // datalist suggestions
+  // datalist suggestions — เก็บ tag ทั้งหมดที่เคยมี ให้พิมพ์ชื่อโปรเจกต์ซ้ำได้แม่นยำ
   const allTags = [...new Set(tasks.map(t=>t.tag).filter(Boolean))];
   tagList.innerHTML = allTags.map(tg=>`<option value="${esc(tg)}">`).join("");
 
-  // filter chips
+  // filter chips — โชว์เฉพาะโปรเจกต์ที่ยังมีงานค้าง (ไม่ใช่ทุก tag ที่เคยมี) โปรเจกต์ที่เสร็จหมดแล้วให้หายไปเอง
+  const pendingTags = [...new Set(tasks.filter(t=>t.state!=="done" && t.tag).map(t=>t.tag))];
   filterbar.innerHTML = `<span class="label">โปรเจกต์:</span>
     <button class="chip ${activeFilter===null?'on':''}" onclick="setFilter(null)">ทั้งหมด</button>
-    ${allTags.map(tg=>`<button class="chip ${activeFilter===tg?'on':''}" onclick="setFilter('${esc(tg)}')">${esc(tg)}</button>`).join("")}`;
+    ${pendingTags.map(tg=>`<button class="chip ${activeFilter===tg?'on':''}" onclick="setFilter('${esc(tg)}')">${esc(tg)}</button>`).join("")}`;
 
   const scoped = activeFilter ? tasks.filter(t=>t.tag===activeFilter) : tasks;
   const inbox = scoped.filter(t=>t.state==="inbox");
@@ -442,7 +450,7 @@ function render(){
   // done zone
   doneList.innerHTML = done.length ? done.map(t=>{
     const s = SRC[t.src];
-    return `<div class="card done-card">
+    return `<div class="card done-card ${t.id===selectedId?'selected':''}" tabindex="0" onclick="select('${t.id}')" onkeydown="if(event.key==='Enter')select('${t.id}')">
       <div class="card-top"><span class="src ${s.cls}">${s.name}</span>${t.tag?`<span class="tag-pill">${esc(t.tag)}</span>`:''}</div>
       <h3>${esc(t.title)}</h3>
     </div>`;
@@ -458,7 +466,7 @@ function renderDetail(){
     el.innerHTML = `<div class="detail-empty"><p>กำลังโหลด…</p></div>`;
     return;
   }
-  const t = tasks.find(x=>x.id===selectedId && x.state==="active");
+  const t = tasks.find(x=>x.id===selectedId && (x.state==="active" || x.state==="done"));
   if(!t){
     el.innerHTML = `<div class="detail-empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -470,6 +478,11 @@ function renderDetail(){
   el.innerHTML = `<div class="detail-inner">
     <span class="src ${s.cls}">${s.name}</span>
     <h2>${esc(t.title)}</h2>
+
+    ${t.state==="done" ? `<div class="donebanner">
+      <span>✓ เสร็จสิ้นแล้ว</span>
+      <button class="editbtn" onclick="reopenTask('${t.id}')">เปิดกลับมาแก้ไข</button>
+    </div>` : ''}
 
     <div class="next" id="field-next">
       <div class="field-row"><span class="label">ขั้นตอนต่อไป — ทำได้เลย</span>
@@ -537,6 +550,12 @@ function pullIn(id){
   render();
   postAction("pullIn", {id});
 }
+function reopenTask(id){
+  const t = tasks.find(x=>x.id===id); if(!t) return;
+  t.state = "active";
+  render();
+  postAction("update", {id, state:"active"});
+}
 function select(id){ selectedId=id; render(); }
 function toggle(id,i){
   const t = tasks.find(x=>x.id===id); if(!t || !t.subs[i]) return;
@@ -552,6 +571,7 @@ function addSub(id){
   const inp=document.getElementById("subIn"); const v=inp.value.trim(); if(!v) return;
   const t = tasks.find(x=>x.id===id); if(!t) return;
   t.subs.push({t:v, done:false});
+  if(t.state === "done") t.state = "active"; // เพิ่มขั้นตอนใหม่ที่ยังไม่เสร็จ -> กลับไปกำลังทำอัตโนมัติ
   render();
   const ni=document.getElementById("subIn"); if(ni) ni.focus();
   postAction("addSubtask", {id, text:v});
