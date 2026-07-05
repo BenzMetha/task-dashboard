@@ -409,7 +409,12 @@ function render(){
 
   const scoped = activeFilter ? tasks.filter(t=>t.tag===activeFilter) : tasks;
   const inbox = scoped.filter(t=>t.state==="inbox");
-  const active = scoped.filter(t=>t.state==="active");
+  const active = scoped.filter(t=>t.state==="active").sort((a,b)=>{
+    if(!a.deadline && !b.deadline) return 0;
+    if(!a.deadline) return 1;  // ไม่มีเดดไลน์ -> ไปท้ายสุด
+    if(!b.deadline) return -1;
+    return a.deadline < b.deadline ? -1 : a.deadline > b.deadline ? 1 : 0; // เดดไลน์ใกล้สุด/เลยกำหนดแล้ว ขึ้นก่อน
+  });
   const done = scoped.filter(t=>t.state==="done");
 
   // stats (always reflect the full set, not the filtered view)
