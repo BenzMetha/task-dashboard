@@ -37,6 +37,7 @@
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}
+  html,body{overflow-x:hidden}
   body{
     font-family:"IBM Plex Sans Thai",system-ui,sans-serif;
     background:var(--canvas);
@@ -189,6 +190,14 @@
     .grid{grid-template-columns:1fr}
     .detail{position:static}
     .stats{width:100%;justify-content:space-between}
+
+    .capture{flex-direction:column;align-items:stretch;min-width:0;padding:10px 12px}
+    .capture input,
+    .capture select{width:100%;max-width:none;box-sizing:border-box}
+    .capture input#capTag{border-left:none;border-top:1px solid var(--line);padding-left:0;padding-top:10px;margin-top:2px}
+    .capture select{padding:10px 8px}
+    .btn-drop{width:100%}
+    .card-top{flex-wrap:wrap}
   }
   @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto}}
 </style>
