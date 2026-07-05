@@ -321,6 +321,10 @@ async function loadTasks(){
 
 // เรียก backend ทุกครั้งที่มีการเปลี่ยนแปลง แล้วเอา list ที่ได้กลับมา (ล่าสุดจริง) มาแทนของเดิมทั้งหมด
 async function postAction(action, data){
+  // จำค่าที่พิมพ์ค้างอยู่ในช่อง "เพิ่มขั้นตอน" ไว้ก่อน เผื่อ backend ตอบกลับช้าแล้วมาล้าง render ทับ
+  const subInEl = document.getElementById("subIn");
+  const preserved = subInEl ? {val: subInEl.value, focused: document.activeElement === subInEl} : null;
+
   try{
     const res = await fetch(WEBAPP_URL, {
       method:"POST",
@@ -333,6 +337,14 @@ async function postAction(action, data){
     alert("บันทึกไม่สำเร็จ เช็คอินเทอร์เน็ต แล้วลองใหม่");
   }
   render();
+
+  if(preserved){
+    const ni = document.getElementById("subIn");
+    if(ni){
+      ni.value = preserved.val;
+      if(preserved.focused){ ni.focus(); const len = ni.value.length; ni.setSelectionRange(len, len); }
+    }
+  }
 }
 
 /* ---------- ICONS ---------- */
@@ -349,16 +361,20 @@ function isToday(iso){
   const d = new Date(iso), n = new Date();
   return d.getFullYear()===n.getFullYear() && d.getMonth()===n.getMonth() && d.getDate()===n.getDate();
 }
-// เดดไลน์เก็บเป็น "YYYY-MM-DD" (จาก input type=date) — ฟังก์ชันนี้แปลงให้อ่านง่าย
+// เดดไลน์เก็บเป็น "YYYY-MM-DD" ปกติ แต่เผื่อ Sheets แปลงเป็น Date แล้วได้ ISO เต็มรูปแบบกลับมา ตัดเอาแค่ 10 ตัวแรกก่อนเสมอ
 function formatDeadline(dstr){
   if(!dstr) return "";
-  const d = new Date(dstr+"T00:00:00");
+  const datePart = String(dstr).slice(0,10);
+  const d = new Date(datePart+"T00:00:00");
   if(isNaN(d)) return dstr; // เผื่อค่าเก่าที่เป็น free text ก่อนเปลี่ยนมาใช้ date picker
-  return d.toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"2-digit"});
+  const dd = String(d.getDate()).padStart(2,"0");
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  return `${dd}-${mm}-${d.getFullYear()}`;
 }
 function isOverdue(dstr){
   if(!dstr) return false;
-  const d = new Date(dstr+"T00:00:00");
+  const datePart = String(dstr).slice(0,10);
+  const d = new Date(datePart+"T00:00:00");
   if(isNaN(d)) return false;
   const today = new Date(); today.setHours(0,0,0,0);
   return d < today;
@@ -548,7 +564,7 @@ function editField(id, field, label){
   const inputType = field === "deadline" ? "date" : "text";
   wrap.innerHTML = `<span class="label">${esc(label)}</span>
     <div class="editrow">
-      <input id="editIn" type="${inputType}" value="${esc(t[field]||"")}" onkeydown="if(event.key==='Enter')saveField('${id}','${field}')">
+      <input id="editIn" type="${inputType}" value="${esc(inputType==='date' ? String(t[field]||"").slice(0,10) : (t[field]||""))}" onkeydown="if(event.key==='Enter')saveField('${id}','${field}')">
       <button onclick="saveField('${id}','${field}')">บันทึก</button>
     </div>`;
   const inp = document.getElementById("editIn");
